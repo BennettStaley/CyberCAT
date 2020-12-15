@@ -13,7 +13,7 @@ using System.Windows.Forms;
 
 namespace CyberCAT.Forms
 {
-    
+
     public partial class Form1 : Form
     {
         public Form1()
@@ -21,16 +21,20 @@ namespace CyberCAT.Forms
             InitializeComponent();
         }
 
+
+        private CyberPunkSaveFile saveFile;
+
         private void button1_Click(object sender, EventArgs e)
         {
-            if (File.Exists(textBox1.Text))
+            var file = textBox1.Text + "/sav.dat";
+            if (File.Exists(file))
             {
-                using (var compressedInputStream = File.OpenRead(textBox1.Text))
+                using (var compressedInputStream = File.OpenRead(file))
                 {
-                    var saveFile = new CyberPunkSaveFile();
+                    saveFile = new CyberPunkSaveFile();
                     saveFile.ReadHeader(compressedInputStream);
                     saveFile.Decompress(compressedInputStream);
-                    saveFile.Compress("output.bin");
+                    //saveFile.Compress("/Output/output.bin");
                     //_chunkedFile = new ChunkedLz4File(compressedInputStream);
                     //using (var inputStream = _chunkedFile.Decompress(compressedInputStream))
                     //{
@@ -50,22 +54,26 @@ namespace CyberCAT.Forms
 
         private void button2_Click(object sender, EventArgs e)
         {
-            using (var compressedInputStream = File.OpenRead(@"output.bin"))
+
+            if (saveFile == null)
             {
-                var saveFile = new CyberPunkSaveFile();
-                saveFile.ReadHeader(compressedInputStream);
-                saveFile.Decompress(compressedInputStream);
-                saveFile.Compress("output_2.bin");
-                //_chunkedFile = new ChunkedLz4File(compressedInputStream);
-                //using (var inputStream = _chunkedFile.Decompress(compressedInputStream))
-                //{
-                //    using (var fileStream = File.Create(@"H:\CP2077_sg\output.bin"))
-                //    {
-                //        inputStream.Seek(0, SeekOrigin.Begin);
-                //        inputStream.CopyTo(fileStream);
-                //    }
-                //}
+                MessageBox.Show(
+                    "Decompress first!",
+                    "Error in Compressing",
+                      MessageBoxButtons.OK,
+                      MessageBoxIcon.Asterisk
+                );
             }
+            else
+            {
+                saveFile.Compress("output_2.bin");
+            }
+
+        }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

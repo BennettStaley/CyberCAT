@@ -51,12 +51,12 @@ namespace CyberCAT.Core.Classes
                 ChunkCount = reader.ReadInt32();
                 HeaderSize = reader.ReadInt32();
             }
-            
+
         }
         public void Decompress(Stream input)
         {
             Table = ChunkedLz4FileTable.Read(input, ChunkCount);
-            PartialHeaderSize = HeaderSize-(input.Position);
+            PartialHeaderSize = HeaderSize - (input.Position);
             TrailingFileHeaderContent = new byte[PartialHeaderSize];
             input.Read(TrailingFileHeaderContent);
             input.Position = HeaderSize;
@@ -69,9 +69,14 @@ namespace CyberCAT.Core.Classes
             input.Read(buffer, 0, buffer.Length);
             RestOfContent = buffer;
             int index = 0;
+            if (Directory.Exists("decompressed"))
+            {
+                Directory.Delete("decompressed", true);
+            }
+            Directory.CreateDirectory("decompressed");
             foreach (var chunk in Table.Chunks)
             {
-                File.WriteAllBytes($"chunk_{index}.bin", chunk.DecompressedData);
+                File.WriteAllBytes($"decompressed/chunk_{index}.bin", chunk.DecompressedData);
                 index++;
             }
         }
@@ -88,6 +93,10 @@ namespace CyberCAT.Core.Classes
                     writer.Write(HeaderSize);
                     int offset = HeaderSize;
                     int index = 0;
+                    if (Table.Chunks == null)
+                    {
+                        throw new Exception("decompress first!");
+                    }
                     foreach (var chunk in Table.Chunks)
                     {
                         var target = new byte[LZ4Codec.MaximumOutputSize(chunk.DecompressedData.Length)];
@@ -102,11 +111,16 @@ namespace CyberCAT.Core.Classes
                         {
                             throw new Exception("Unexpected bytesDecoded");//TODO Remove this when modifications are possible
                         }
-                        File.WriteAllBytes($"test_Chunk{index}.bin", compressedData);
+                        if (Directory.Exists("test_chunks"))
+                        {
+                            Directory.Delete("test_chunks", true);
+                        }
+                        Directory.CreateDirectory("test_chunks");
+                        File.WriteAllBytes($"test_chunks/test_Chunk{index}.bin", compressedData);
                         writer.Write(fakeSize);//CompressedChunkSize
                         writer.Write(bytesDecoded);//DecompressedChunkSize
                         offset = offset + fakeSize;
-                        if (index < Table.Chunks.Length-1)
+                        if (index < Table.Chunks.Length - 1)
                         {
                             writer.Write(offset);//EndOfChunkOffset
                         }
@@ -132,11 +146,18 @@ namespace CyberCAT.Core.Classes
                         {
                             throw new Exception("Unexpected bytesDecoded");//TODO Remove this when modifications are possible
                         }
+
+                        Directory.CreateDirectory("compressed");
                         writer.Write(bytesDecoded);
                         writer.Write(compressedData);
                     }
                     writer.Write(RestOfContent);
-                    using (var fileStream = File.Create(outputFileName))
+                    if (Directory.Exists("compressed"))
+                    {
+                        Directory.Delete("compressed", true);
+                    }
+                    Directory.CreateDirectory("compressed");
+                    using (var fileStream = File.Create("compressed/" + outputFileName))
                     {
                         memoryStream.Seek(0, SeekOrigin.Begin);
                         memoryStream.CopyTo(fileStream);
